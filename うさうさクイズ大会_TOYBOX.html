@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>うさうさクイズ大会｜TOYBOX</title>
+<style>
+  /* ===== うさうさ研修工房 × TOYBOX：外部フォント不使用 ===== */
+  :root{
+    --red:#ff5d5d; --orange:#ff9f43; --yellow:#ffd23f; --green:#3ec96f;
+    --blue2:#3ea0ff; --purple:#9b6dff; --pink:#ff6fb5;
+    --cream:#fff8ec; --ink:#3a2e2a;
+    --shadow-hard:0 6px 0; /* おもちゃ風のベタ影 */
+    --radius:22px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; color:var(--ink); line-height:1.55;
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 12%, rgba(255,210,63,.45), transparent 24%),
+      radial-gradient(circle at 85% 14%, rgba(62,160,255,.4), transparent 22%),
+      radial-gradient(circle at 25% 85%, rgba(255,111,181,.4), transparent 24%),
+      radial-gradient(circle at 80% 88%, rgba(62,201,111,.4), transparent 24%),
+      repeating-linear-gradient(45deg, #fff8ec 0 22px, #fff2dd 22px 44px);
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:24px 18px 70px;}
+
+  /* ヘッダー：おもちゃのロゴ板 */
+  header{text-align:center; margin-bottom:14px;}
+  .badge{display:inline-block; font-size:12px; letter-spacing:.06em; color:#fff; font-weight:800;
+    background:var(--purple); padding:6px 16px; border-radius:999px; margin-bottom:12px;
+    border:3px solid #fff; box-shadow:var(--shadow-hard) rgba(123,80,200,.5);}
+  h1{font-size:28px; margin:0 0 4px; color:#fff; letter-spacing:.02em;
+    text-shadow:
+      3px 3px 0 var(--red), -2px 2px 0 var(--blue2), 2px -2px 0 var(--green),
+      0 5px 0 rgba(0,0,0,.12);
+    transform:rotate(-1.5deg);}
+  .lead{color:#7a6a5e; font-size:13.5px; margin:4px 0 0; font-weight:700;}
+  .ver{font-size:11px; color:#a8978a; margin-top:5px; font-weight:700;}
+
+  .speech{position:relative; background:#fff; border:3px solid var(--yellow);
+    border-radius:var(--radius); padding:13px 15px 13px 54px; margin:14px 0; font-size:13px;
+    color:#5e4d44; font-weight:600; box-shadow:var(--shadow-hard) rgba(0,0,0,.08);}
+  .speech::before{content:"🐰"; position:absolute; left:14px; top:11px; font-size:26px;}
+
+  /* スコア：3色ブロック */
+  .score{display:flex; gap:10px; margin-bottom:16px;}
+  .sc{flex:1; border-radius:18px; padding:12px 8px; text-align:center; color:#fff;
+    border:3px solid #fff; box-shadow:var(--shadow-hard) rgba(0,0,0,.15); transform:rotate(-1deg);}
+  .sc:nth-child(2){transform:rotate(1deg);}
+  .sc:nth-child(3){transform:rotate(-1.5deg);}
+  .sc.q{background:var(--blue2);} .sc.o{background:var(--green);} .sc.x{background:var(--red);}
+  .sc .n{font-size:32px; font-weight:900; line-height:1; text-shadow:0 2px 0 rgba(0,0,0,.15);}
+  .sc .l{font-size:11.5px; margin-top:3px; font-weight:800; opacity:.95;}
+  .sc.pop{animation:pop .35s;}
+  @keyframes pop{0%{transform:scale(1) rotate(0);}40%{transform:scale(1.25) rotate(3deg);}100%{transform:scale(1) rotate(-1deg);}}
+
+  /* タイマー：おもちゃの時計 */
+  .timer-card{background:#fff; border:4px solid var(--orange); border-radius:26px;
+    box-shadow:var(--shadow-hard) rgba(0,0,0,.12); padding:22px 18px; text-align:center; margin-bottom:16px;}
+  .sec-switch{display:inline-flex; gap:6px; background:#fff3dc; border:3px solid #ffe1b0;
+    border-radius:999px; padding:4px; margin-bottom:14px;}
+  .sec-switch .ss{font-family:inherit; font-size:14px; font-weight:900; border:none; cursor:pointer;
+    padding:8px 20px; border-radius:999px; color:#b0936a; background:transparent; transition:all .15s;}
+  .sec-switch .ss.on{background:var(--orange); color:#fff; box-shadow:0 3px 0 rgba(0,0,0,.15);}
+  .ring{position:relative; width:200px; height:200px; margin:0 auto 10px;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring .time{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:66px; font-weight:900; font-variant-numeric:tabular-nums; color:var(--green);
+    text-shadow:0 3px 0 rgba(0,0,0,.1);}
+  .ring.warn .time{color:var(--orange);}
+  .ring.danger .time{color:var(--red); animation:bounce .4s infinite alternate;}
+  @keyframes bounce{from{transform:scale(1) translateY(0);}to{transform:scale(1.08) translateY(-3px);}}
+  .ring.done .time{font-size:34px; color:var(--red);}
+
+  .timer-btns{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:6px;}
+  button.btn{font-family:inherit; font-size:15px; font-weight:900; border:3px solid #fff; border-radius:16px;
+    padding:13px 22px; cursor:pointer; color:#fff; transition:transform .08s; box-shadow:var(--shadow-hard) rgba(0,0,0,.18);}
+  .btn:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  .btn-start{background:var(--green);}
+  .btn-pause{background:var(--orange);}
+  .btn-reset{background:var(--blue2);}
+
+  /* 判定 */
+  .judge-card{background:#fff; border:4px solid var(--pink); border-radius:26px;
+    box-shadow:var(--shadow-hard) rgba(0,0,0,.12); padding:18px; margin-bottom:16px;}
+  .judge-card label{display:block; font-size:12.5px; color:#7a6a5e; font-weight:800; margin-bottom:6px;}
+  .judge-card input{width:100%; border:3px solid #ffe1b0; border-radius:14px; padding:11px 13px;
+    font-size:14px; font-family:inherit; color:var(--ink); background:var(--cream); font-weight:700;}
+  .judge-card input:focus{outline:none; border-color:var(--yellow); background:#fff;}
+  .hint{font-weight:600; opacity:.8;}
+  .jb{display:flex; gap:12px; margin-top:16px;}
+  .jb button{flex:1; font-size:20px; padding:18px; border-radius:18px;}
+  .btn-ok{background:var(--green);}
+  .btn-ng{background:var(--red);}
+
+  /* ログ */
+  .log-card{background:#fff; border:4px solid var(--purple); border-radius:26px;
+    box-shadow:var(--shadow-hard) rgba(0,0,0,.12); padding:18px;}
+  .log-card h2{font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:8px; color:#6a4fb0; font-weight:900;}
+  .log-card h2 .blk{width:14px;height:14px;border-radius:4px;background:var(--purple);transform:rotate(8deg);}
+  .log{list-style:none; margin:0; padding:0; max-height:220px; overflow:auto;}
+  .log li{display:flex; align-items:center; gap:8px; padding:9px 6px; border-bottom:2px dotted #f0e2cf; font-size:14px; font-weight:700;}
+  .log li:last-child{border-bottom:none;}
+  .log .mark{font-size:18px; width:24px; text-align:center; flex:0 0 auto;}
+  .log .who{color:#7a6a5e; min-width:0; overflow-wrap:anywhere; word-break:break-word;}
+  .log .qn{margin-left:auto; font-size:12px; color:#fff; background:var(--blue2); padding:2px 9px; border-radius:999px; flex:0 0 auto;}
+  .empty{color:#b0a092; font-size:13px; text-align:center; padding:14px; font-weight:700;}
+
+  .mini-btns{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .mini-btns button{flex:1; min-width:120px; font-size:13px; padding:11px; color:#fff; font-weight:800;
+    border:3px solid #fff; border-radius:14px; cursor:pointer; box-shadow:var(--shadow-hard) rgba(0,0,0,.15);}
+  .mini-btns button:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.15);}
+  .mb-undo{background:var(--orange);} .mb-copy{background:var(--green);} .mb-reset{background:var(--red);}
+  .copied{display:none; color:var(--green); font-size:13px; font-weight:900; text-align:center; margin-top:8px;}
+
+  #selftest{font-size:11px; text-align:center; color:#a8978a; margin-top:22px; font-weight:700;}
+  footer{text-align:center; font-size:11px; color:#a8978a; margin-top:22px; font-weight:700;}
+
+  /* 紙吹雪 */
+  .confetti{position:fixed; top:-12px; width:11px; height:14px; z-index:50; pointer-events:none; border-radius:2px;}
+
+  /* ===== いたずらうさぎ ===== */
+  .bunny{position:fixed; z-index:40; pointer-events:none; font-size:34px; user-select:none;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.18));}
+  /* 画面端からひょっこり */
+  @keyframes peek-left{
+    0%{transform:translateX(-120%) rotate(18deg);}
+    18%{transform:translateX(8%) rotate(8deg);}
+    30%{transform:translateX(0) rotate(0);}
+    70%{transform:translateX(0) rotate(0);}
+    82%{transform:translateX(8%) rotate(8deg);}
+    100%{transform:translateX(-120%) rotate(18deg);}
+  }
+  @keyframes peek-right{
+    0%{transform:translateX(120%) scaleX(-1) rotate(-18deg);}
+    18%{transform:translateX(-8%) scaleX(-1) rotate(-8deg);}
+    30%{transform:translateX(0) scaleX(-1) rotate(0);}
+    70%{transform:translateX(0) scaleX(-1) rotate(0);}
+    82%{transform:translateX(-8%) scaleX(-1) rotate(-8deg);}
+    100%{transform:translateX(120%) scaleX(-1) rotate(-18deg);}
+  }
+  @keyframes peek-bottom{
+    0%{transform:translateY(120%);}
+    18%{transform:translateY(-6%);}
+    30%{transform:translateY(0);}
+    68%{transform:translateY(0) rotate(0);}
+    74%{transform:translateY(-4%) rotate(-6deg);}
+    80%{transform:translateY(0) rotate(0);}
+    100%{transform:translateY(120%);}
+  }
+  /* 積み木で遊ぶ：うさぎがぴょこぴょこ、ブロックが積まれる */
+  .play{position:fixed; z-index:40; pointer-events:none; bottom:14px;}
+  .play .bun{font-size:30px; display:inline-block; animation:hop .5s infinite alternate;}
+  @keyframes hop{from{transform:translateY(0) rotate(-3deg);}to{transform:translateY(-7px) rotate(3deg);}}
+  .play .stack{display:inline-flex; flex-direction:column-reverse; vertical-align:bottom; margin-left:2px;}
+  .play .blk2{width:18px; height:18px; border-radius:4px; border:2px solid #fff; opacity:0;
+    box-shadow:0 2px 0 rgba(0,0,0,.18); animation:drop .4s forwards;}
+  @keyframes drop{from{opacity:0; transform:translateY(-26px) rotate(20deg);}
+    to{opacity:1; transform:translateY(0) rotate(0);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">うさうさ研修工房 × TOYBOX</span>
+    <h1>🐰 うさうさクイズ大会</h1>
+    <p class="lead">受講生が口頭で出題＆回答／講師は30秒タイマーと記録だけ</p>
+    <p class="ver" id="ver"></p>
+  </header>
+
+  <div class="speech">
+    出題も回答も受講生が口頭でOK！講師は「スタート」で30秒を計って、⭕か❌を押すだけ。
+    指名メモは任意だよ。正解すると…おたのしみ🎉
+  </div>
+
+  <div class="score">
+    <div class="sc q"><div class="n" id="sc-q">0</div><div class="l">出題数</div></div>
+    <div class="sc o"><div class="n" id="sc-o">0</div><div class="l">⭕ 正解</div></div>
+    <div class="sc x"><div class="n" id="sc-x">0</div><div class="l">❌ 不正解</div></div>
+  </div>
+
+  <div class="timer-card">
+    <div class="sec-switch" id="secSwitch">
+      <button class="ss" data-sec="15" onclick="setSec(15)">15秒</button>
+      <button class="ss on" data-sec="30" onclick="setSec(30)">30秒</button>
+    </div>
+    <div class="ring" id="ring">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="90" fill="none" stroke="#ffe9c7" stroke-width="14"/>
+        <circle id="prog" cx="100" cy="100" r="90" fill="none" stroke="#3ec96f" stroke-width="14"
+          stroke-linecap="round" stroke-dasharray="565.48" stroke-dashoffset="0"/>
+      </svg>
+      <div class="time" id="time">30</div>
+    </div>
+    <div class="timer-btns">
+      <button class="btn btn-start" id="startBtn" onclick="startTimer()">▶ スタート</button>
+      <button class="btn btn-pause" id="pauseBtn" onclick="pauseTimer()" style="display:none;">⏸ ストップ</button>
+      <button class="btn btn-reset" onclick="resetTimer()">⟳ リセット</button>
+    </div>
+  </div>
+
+  <div class="judge-card">
+    <label>指名メモ <span class="hint">（任意・役割表記。氏名は書かない）</span></label>
+    <input type="text" id="who" placeholder="例）受講生A（空欄でもOK）">
+    <div class="jb">
+      <button class="btn btn-ok" onclick="judge(true)">⭕ 正解</button>
+      <button class="btn btn-ng" onclick="judge(false)">❌ 不正解</button>
+    </div>
+  </div>
+
+  <div class="log-card">
+    <h2><span class="blk"></span>きろく</h2>
+    <ul class="log" id="log"><li class="empty">まだ記録はありません</li></ul>
+    <div class="mini-btns">
+      <button class="mb-undo" onclick="undo()">↩ 1つ取消</button>
+      <button class="mb-copy" onclick="copyResult()">📋 結果コピー</button>
+      <button class="mb-reset" onclick="resetAll()">🗑 全リセット</button>
+    </div>
+    <div class="copied" id="copied">コピーしました ✓</div>
+  </div>
+
+  <div id="selftest"></div>
+  <footer>面白きこともなき世を面白く　🐰 うさうさ研修工房</footer>
+</div>
+
+<script>
+  "use strict";
+  const APP_VER = "v1.3.0-toybox";
+  let quizSec = 30;          // 15 or 30（切り替え可能）
+  document.getElementById("ver").textContent = "APP_VER " + APP_VER;
+
+  const CIRC = 2 * Math.PI * 90;
+  let quizMs = quizSec * 1000;   // 制限ミリ秒
+  let remain = quizSec;          // 表示用（切り上げ秒）
+  let endAt = null;              // 終了予定時刻(ms)
+  let leftWhenPaused = quizMs;   // 停止時点の残りms
+  let tick = null, running = false;
+  const records = [];
+
+  const timeEl = document.getElementById("time");
+  const ringEl = document.getElementById("ring");
+  const progEl = document.getElementById("prog");
+
+  // 残りms→表示（実時刻基準で計算した値を渡す）
+  function paint(remMs){
+    const remSec = Math.max(0, Math.ceil(remMs/1000));
+    remain = remSec;
+    timeEl.textContent = remSec > 0 ? remSec : "時間切れ";
+    const ratio = Math.max(0, remMs) / quizMs;
+    progEl.style.strokeDashoffset = (CIRC * (1 - ratio)).toFixed(2);
+    const stroke = remSec<=5 ? "#ff5d5d" : remSec<=10 ? "#ff9f43" : "#3ec96f";
+    progEl.setAttribute("stroke", stroke);
+    ringEl.classList.toggle("warn", remSec<=10 && remSec>5);
+    ringEl.classList.toggle("danger", remSec<=5 && remSec>0);
+    ringEl.classList.toggle("done", remSec<=0);
+  }
+  function renderTimer(){ paint(running ? (endAt - Date.now()) : leftWhenPaused); }
+
+  function startTimer(){
+    if(running) return;
+    if(leftWhenPaused <= 0) leftWhenPaused = quizMs;
+    endAt = Date.now() + leftWhenPaused;
+    running = true;
+    document.getElementById("startBtn").style.display="none";
+    document.getElementById("pauseBtn").style.display="inline-block";
+    tick = setInterval(()=>{
+      const remMs = endAt - Date.now();
+      paint(remMs);
+      if(remMs <= 0){
+        clearInterval(tick); running=false; leftWhenPaused = 0;
+        document.getElementById("startBtn").style.display="inline-block";
+        document.getElementById("startBtn").textContent="▶ もう一度";
+        document.getElementById("pauseBtn").style.display="none";
+        if(navigator.vibrate) try{navigator.vibrate(200);}catch(e){}
+      }
+    }, 100); // 描画頻度。残り時間は実時刻から算出するのでドリフトしない
+  }
+  function pauseTimer(){
+    if(!running) return;
+    clearInterval(tick); running=false;
+    leftWhenPaused = Math.max(0, endAt - Date.now());
+    renderTimer();
+    document.getElementById("startBtn").style.display="inline-block";
+    document.getElementById("startBtn").textContent="▶ 再開";
+    document.getElementById("pauseBtn").style.display="none";
+  }
+  function resetTimer(){
+    clearInterval(tick); running=false;
+    leftWhenPaused = quizMs; endAt = null;
+    renderTimer();
+    document.getElementById("startBtn").style.display="inline-block";
+    document.getElementById("startBtn").textContent="▶ スタート";
+    document.getElementById("pauseBtn").style.display="none";
+  }
+
+  function setSec(sec){
+    if(sec!==15 && sec!==30) return;
+    quizSec = sec; quizMs = sec*1000;
+    [...document.getElementById("secSwitch").children].forEach(b=>{
+      b.classList.toggle("on", Number(b.dataset.sec)===sec);
+    });
+    resetTimer();
+  }
+
+  function sanitizeName(s){
+    // 改行・タブ・制御文字を空白化 → 連続空白を1つに → トリム → 上限60字
+    let t = (s||"").replace(/[\r\n\t\u0000-\u001f]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    if(t.length > 60) t = t.slice(0,60) + "…";
+    return t;
+  }
+
+  function judge(ok){
+    const who = sanitizeName(document.getElementById("who").value);
+    records.push({ok:!!ok, who, n:records.length+1});
+    document.getElementById("who").value="";
+    renderLog(); renderScore(ok); resetTimer();
+    if(ok) confetti();
+  }
+  function undo(){ if(records.length){ records.pop(); renderLog(); renderScore(); } }
+
+  function renderScore(justOk){
+    document.getElementById("sc-q").textContent=String(records.length);
+    document.getElementById("sc-o").textContent=String(records.filter(r=>r.ok).length);
+    document.getElementById("sc-x").textContent=String(records.filter(r=>!r.ok).length);
+    if(justOk===true) popEl("sc-o"); else if(justOk===false) popEl("sc-x");
+  }
+  function popEl(id){ const el=document.getElementById(id).parentElement;
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+
+  function renderLog(){
+    const ul=document.getElementById("log");
+    if(!records.length){ ul.innerHTML='<li class="empty">まだ記録はありません</li>'; return; }
+    ul.innerHTML="";
+    records.slice().reverse().forEach(r=>{
+      const li=document.createElement("li");
+      li.innerHTML='<span class="mark">'+(r.ok?"⭕":"❌")+'</span>'+
+        '<span class="who">'+(r.who?escapeHtml(r.who):"（指名なし）")+'</span>'+
+        '<span class="qn">Q'+r.n+'</span>';
+      ul.appendChild(li);
+    });
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function buildResult(recs){
+    const o=recs.filter(r=>r.ok).length, x=recs.filter(r=>!r.ok).length;
+    const rate=recs.length?Math.round(o/recs.length*100):0;
+    let s="【🐰 うさうさクイズ大会 結果】\n";
+    s+="出題："+recs.length+"問　／　⭕"+o+"　❌"+x+"　／　正解率 "+rate+"%\n";
+    if(recs.length){ s+="----\n"; recs.forEach(r=>{ s+="Q"+r.n+" "+(r.ok?"⭕":"❌")+" "+(r.who||"（指名なし）")+"\n"; }); }
+    return s.trim();
+  }
+  function copyResult(){ const txt=buildResult(records);
+    navigator.clipboard.writeText(txt).then(()=>{ const c=document.getElementById("copied");
+      c.style.display="block"; setTimeout(()=>c.style.display="none",1600); }).catch(()=>{}); }
+  function resetAll(){ records.length=0; renderLog(); renderScore(); resetTimer(); }
+
+  // 🎉 紙吹雪
+  function confetti(){
+    const colors=["#ff5d5d","#ff9f43","#ffd23f","#3ec96f","#3ea0ff","#9b6dff","#ff6fb5"];
+    for(let i=0;i<28;i++){
+      const c=document.createElement("div"); c.className="confetti";
+      c.style.left=Math.random()*100+"vw";
+      c.style.background=colors[i%colors.length];
+      c.style.transform="rotate("+(Math.random()*360)+"deg)";
+      const dur=1.1+Math.random()*0.9, delay=Math.random()*0.2;
+      c.animate([
+        {transform:"translateY(0) rotate(0)", opacity:1},
+        {transform:"translateY(102vh) rotate("+(360+Math.random()*360)+"deg)", opacity:.9}
+      ], {duration:dur*1000, delay:delay*1000, easing:"cubic-bezier(.3,.6,.5,1)"});
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(), (dur+delay)*1000+100);
+    }
+  }
+
+  renderTimer();
+
+  /* ===== いたずらうさぎ：ときどき隠れて出てくる／積み木で遊ぶ ===== */
+  const BLK_COLORS=["#ff5d5d","#ff9f43","#ffd23f","#3ec96f","#3ea0ff","#9b6dff","#ff6fb5"];
+  let bunnyBusy=false;
+
+  function peekBunny(){
+    if(bunnyBusy) return; bunnyBusy=true;
+    const b=document.createElement("div"); b.className="bunny"; b.textContent="🐰";
+    const side=["left","right","bottom"][Math.floor(Math.random()*3)];
+    const dur=3.2;
+    if(side==="left"){ b.style.left="6px"; b.style.bottom=(40+Math.random()*180)+"px";
+      b.style.animation="peek-left "+dur+"s ease-in-out forwards"; }
+    else if(side==="right"){ b.style.right="6px"; b.style.bottom=(40+Math.random()*180)+"px";
+      b.style.animation="peek-right "+dur+"s ease-in-out forwards"; }
+    else { b.style.left=(10+Math.random()*70)+"vw"; b.style.bottom="0";
+      b.style.animation="peek-bottom "+dur+"s ease-in-out forwards"; }
+    document.body.appendChild(b);
+    setTimeout(()=>{ b.remove(); bunnyBusy=false; }, dur*1000+150);
+  }
+
+  function playBlocks(){
+    if(bunnyBusy) return; bunnyBusy=true;
+    const wrap=document.createElement("div"); wrap.className="play";
+    wrap.style.left=(8+Math.random()*60)+"vw";
+    const n=2+Math.floor(Math.random()*3); // 2〜4個積む
+    let blocks="";
+    for(let i=0;i<n;i++){
+      blocks+='<span class="blk2" style="background:'+BLK_COLORS[(Math.floor(Math.random()*BLK_COLORS.length))]
+        +'; animation-delay:'+(0.3+i*0.45)+'s;"></span>';
+    }
+    wrap.innerHTML='<span class="bun">🐰</span><span class="stack">'+blocks+'</span>';
+    document.body.appendChild(wrap);
+    const life=1500 + n*450 + 1400;
+    // 退場：ふわっと消える
+    setTimeout(()=>{ wrap.style.transition="opacity .6s, transform .6s";
+      wrap.style.opacity="0"; wrap.style.transform="translateY(10px)"; }, life-600);
+    setTimeout(()=>{ wrap.remove(); bunnyBusy=false; }, life);
+  }
+
+  function bunnyLoop(){
+    const wait=7000 + Math.random()*9000; // 7〜16秒おき
+    setTimeout(()=>{
+      if(Math.random()<0.5) peekBunny(); else playBlocks();
+      bunnyLoop();
+    }, wait);
+  }
+  // 起動して少ししてから始める
+  setTimeout(bunnyLoop, 3500);
+
+  /* ===== 自己テスト ===== */
+  (function selfTest(){
+    const R=[]; const A=(n,c)=>R.push({n,ok:!!c});
+    const recs=[{ok:true,who:"受講生A",n:1},{ok:false,who:"",n:2},{ok:true,who:"受講生B",n:3}];
+    const out=buildResult(recs);
+    A("出題数が3", out.indexOf("出題：3問")>-1);
+    A("正解率67%", out.indexOf("67%")>-1);
+    A("指名なし表記", out.indexOf("（指名なし）")>-1);
+    A("空配列でも安全", buildResult([]).indexOf("出題：0問")>-1);
+    A("既定は30秒", quizSec===30);
+    A("リング計算が数値", !isNaN(parseFloat((CIRC*(1-(15/quizSec))).toFixed(2))));
+    A("秒数切替が関数", typeof setSec==="function");
+    // setSecで15に切替→反映、30に戻す
+    setSec(15); A("15秒に切替できる", quizSec===15 && quizMs===15000 && remain===15);
+    setSec(30); A("30秒に戻せる", quizSec===30 && quizMs===30000 && remain===30);
+    A("不正値は無視", (setSec(99), quizSec===30));
+    // 入力サニタイズ
+    A("改行・タブを空白化", sanitizeName("受講生A\n二行目\tタブ").indexOf("\n")===-1 && sanitizeName("a\tb").indexOf("\t")===-1);
+    A("連続空白を圧縮", sanitizeName("a    b")==="a b");
+    A("長すぎる指名は60字+省略", (function(){const r=sanitizeName("あ".repeat(100)); return r.length===61 && r.endsWith("…");})());
+    A("絵文字は保持", sanitizeName("受講生🐰")==="受講生🐰");
+    // 実時刻タイマー：残msから正しい秒へ切り上げ
+    paint(14200); A("残14.2秒→15表示(切り上げ)", remain===15);
+    paint(0); A("残0→時間切れ表示", timeEl.textContent==="時間切れ");
+    resetTimer();
+    A("HTMLエスケープ有効", escapeHtml("<b>x</b>").indexOf("<b>")===-1);
+    A("confettiが関数", typeof confetti==="function");
+    A("いたずらうさぎ演出が関数", typeof peekBunny==="function" && typeof playBlocks==="function");
+    const pass=R.filter(x=>x.ok).length, all=R.length;
+    const el=document.getElementById("selftest");
+    el.textContent="🐰 セルフテスト "+pass+"/"+all+(pass===all?" 全て通過 🎉":" ⚠ 要確認");
+    el.style.color=(pass===all)?"#3ec96f":"#ff5d5d";
+    if(pass!==all) console.warn("self-test:", R.filter(x=>!x.ok));
+  })();
+</script>
+</body>
+</html>
